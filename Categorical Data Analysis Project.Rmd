@@ -1,0 +1,669 @@
+---
+title: "Jordan_Nesbit_410_Project"
+author: "Rachel Jordan and Michelle Nesbit"
+date: "4/18/2022"
+header-includes: \usepackage{setspace}
+                \doublespacing
+output:
+  pdf_document: default
+  word_document: default
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+### Predicting Responses to A Morality Question Using a GLM
+
+#### Introduction
+
+The data for this project was taken from the National Study of Youth and
+Religion (Wave 4), accessed via the Association of Religion Data
+Archives (Smith, 2021). This data set, which was collected via survey,
+originally contained 1066 variables including but not limited to various
+aspects of religiosity, morality, health, relationships, and demographic
+information. We paired down the data set to a few variables of interest
+to us and used these variables to predict subjects' responses to a moral
+question. Most of the selected explanatory variables are demographic in
+nature, with some additional variables to measure religiosity. We chose
+to predict morality using demographic, political, and religious
+information, and we operationalized morality as participants' responses
+to the statement "Please indicate how strongly you agree or disagree
+with each statement. It is sometimes okay to break moral rules if it
+works to your advantage and you can get away with it." We recognize that
+responses to this question may have been affected by social desirability
+bias.
+
+#### Larger Field of Study
+
+A brief literature review revealed that gut feelings or instincts also
+known as psychological intuitions are the foundation of morality. French
+sociologist Pierre Bourdieu argues morality is further shaped by "social
+location", which can be understood as the intersection of one's
+identities. Therefore a wide variety of subcultures and personal
+experiences aid in explaining a variance in morality (Miles, 2014).
+Contemporary research on the intersection of such demographics and
+morality suggests that the variance in personal morality is correlated
+with differences in categorical predictors such as age, race, gender,
+and socioeconomic status. For example, according to a Pew Research
+study, 44% of people in the United States say that belief in God is
+necessary to be a moral person; however, in Western European countries,
+this percentage is hovering around 20 or 30. (Tamir et al., 2020). To
+further explore these theories and findings, we decided to investigate
+how morality can be predicted by categorical data points such as
+demographics coupled with religious information.
+
+#### Selecting Research Question/Predictors
+
+Our data set initially had over 1,000 variables, many of which could
+have been selected as contenders for our model selection process. For
+the response variable, we considered using answers to questions about
+anxiety and depression, as well as using answers to other moral
+questions. We also considered using religion or lack thereof as a
+response variable. However, we felt that the responses to that question
+were too skewed. We decided to select only a few questions measuring
+religion in order to avoid problems with collinearity. We settled on
+using the above-mentioned moral question as a response variable. For the
+explanatory variables we selected gender, race, US census region,
+occupation, religion, political ideology, conception of evil, importance
+of religion to the participant, educational level, whether or not
+someone was religious, and whether someone was conservative or liberal.
+The variables relating to religion can be thought of as morally
+formative experiences at an individual level (Miles, 2014). Data
+Preparation Full details of our data cleaning can be found in our code;
+however, one decision is worth justifying. We chose to assign meaning to
+respondents "skipping" the religious identity variable, as 742
+respondents skipped the question. We thought that it was reasonable to
+group these people together as "non-responders" because we felt that not
+answering that question indicated a lack of interest and/or importance
+of religion to these individuals.
+
+#### Exploratory Data Analysis
+
+In order to explore our data set, we made several contingency tables. We
+also looked at breakdowns of how different groups of people responded to
+our moral question. Details can be found in our project code. Chi-square
+tests of independence were also performed. From these tests we concluded
+that there were significant relationships between our response variable
+and religious importance (how important someone reported that their
+religion was to them), political ideology, and gender.
+
+#### Model Selection
+
+A GLMM was attempted; however, while evaluating the results of the GLMM
+we did not find high enough variance between clusters to justify
+modeling this way. Intuitively, we also could not think of a grouping
+with high enough correlation within the groups in terms of our response
+variable. Therefore, we decided to do a regular logistic regression
+model because we had binarized our response variable to perform the
+GLMM, and most of our variables were ordinal and could be treated
+quantitatively. Treating variables quantitatively has a power advantage
+of testing on 1 degree of freedom but does rely on the assumption that
+the predictors have a linear impact. Judging by the way the survey
+questions were constructed, we believe this decision holds; however,
+further attempts at modeling would be beneficial for future researchers.
+
+To select predictors, we went through the variable selection process
+specified in chapter 5 of the textbook (Agresti, 2019). First, we tested
+individual predictors and found gender, political ideology, religious
+importance, and whether someone was religious to be significant at a
+base level alpha of 0.20. Second, we performed backwards elimination and
+determined that politics and whether someone was religious or not did
+not significantly affect the other predictors when removed; therefore,
+we left them out of our model. Third, we retested the variables that
+were removed in step 1 by adding them to the new model. The only
+variable we found that should be added back into the model was
+PoliticsDivided, a variable categorizing people into liberal and
+conservative. Fourth, we checked interaction terms. None were found to
+be significant. Our final model contained gender, religious importance,
+and PoliticsDivided. The model was tested with a ROC curve and
+calculation of an R value. Both measures indicated that the model was
+better than random guessing yet not perhaps the best model that could be
+made.
+
+#### Findings and Conclusions
+
+Our final model was logit[P(Y=1)] = 3.37981 + 0.77092(GENDER(FEMALE)) -
+0.25251(RELIGIOUSIMPORTANCE) - 0.55436(POLITICS(LIBERAL)). The p-values
+show evidence of significant effects for each predictor. In this model,
+the probability that Y=1 is the probability of someone responding "no".
+
+Our model indicates that women who indicated that religion was important
+to them and who are more conservative are less likely to give a "yes"
+response to our question. Specifically, the effect of changing from male
+to female (going from 0 to 1) is 0.77092. The estimated odds that a
+woman would not break her morals to get ahead is exp(0.77092) = 2.162
+times the odds that a man would give the same "no" response. With regard
+to religious importance, an ordinal variable with 1 being that religion
+was extremely important and 5 being that religion was not at all
+important, each 1 unit decrease (moving from 1, highest importance,
+toward 5, lowest importance) in religious importance has a
+multiplicative effect of exp(-0.25251) = 0.77685 the odds that someone
+would not break their morals to get ahead. Finally, the effect of either
+leaning or being strongly conservative rather than leaning or being
+strongly liberal is exp(-0.55436) = 0.57444, or that someone who is more
+conservative has lower odds of breaking their morals than someone who is
+more liberal.
+
+As discussed above, the ROC curve indicated that our model was better
+than random guessing. The difference of deviances between the null model
+and this model is 34.34 with df = 3, which has p-value 1.679e-07,
+meaning that there is strong evidence that the parameters have an
+effect. Testing the null hypothesis that the model holds, we obtained a
+p-value of 1, indicating that the model would hold. However, we have an
+ordinal variable in our model which may affect the assumption that a
+chi-square distribution applies.
+
+#### Recommendations for Future Research
+
+As our response variable is a subjective operationalization of morality,
+we would recommend future research into what this specific question
+means to participants, perhaps via factor analysis (e.g. Svob et al.,
+2019). We would also recommend that future researchers try a cumulative
+probability model and use the response variable in its original ordered
+state to preserve information. Restructuring the data set to allow for a
+GLMM might also give good results if other variables for grouping were
+included from the original raw data set of over 1,000 variables.
+
+#### Works Cited
+
+Agresti, A. (2019). An introduction to categorical data analysis (3rd
+edition). John Wiley & Sons. 
+
+Miles, A. (2014). Demographic correlates of moral differences in the
+contemporary United States. Poetics, 46, 75--88.
+<https://doi.org/10.1016/j.poetic.2014.09.004> 
+
+Smith, C. (2021). National Study of Youth and Religion, Wave 4 (2013).
+Summary \| National Study of Youth and Religion, Wave 4 (2013) \| Data
+Archive \| The Association of Religion Data Archives. Retrieved April
+18, 2022, from
+<https://www.thearda.com/Archive/Files/Descriptions/NSYRW4.asp> 
+
+​​Svob, C., Wong, L. Y. X., Gameroff, M. J., Wickramaratne, P., Weissman,
+M. M., & Kayser, J. (2019). Understanding self-reported importance of
+religion/spirituality in a North American sample of individuals at risk
+for familial depression: A principal component analysis. PLoS ONE,
+14(10). <https://doi.org/10.31234/osf.io/t45bm>
+
+Tamir, C., Connaughton, A., & Salazar, A. M. (2020, October 27). The
+global god divide. Pew Research Center's Global Attitudes Project.
+Retrieved April 18, 2022, from
+<https://www.pewresearch.org/global/2020/07/20/the-global-god-divide/>
+
+\_\_\_\_\_\_\_\_\_\_
+
+## CODE
+
+Importing the data set into R
+
+```{r}
+require(readxl)
+morals <- read_excel("410 Project Data FINAL.xlsx")
+```
+
+Make male/female into a factor
+
+```{r}
+require(tidyverse)
+morals <- morals %>%
+  mutate(GENDER = case_when(
+    GENDER == "male" ~ 0,
+    GENDER == "female" ~ 1
+  ))
+```
+
+Remove observations with race not known or not provided
+
+```{r}
+morals<-subset(morals, RACE!=888 & RACE!=777)
+```
+
+Remove observations where political affiliation is "don't know"
+
+```{r}
+morals<-subset(morals, POLITICS!=8)
+```
+
+Recode -99 for religion as 17
+
+```{r}
+morals$RELIGION <-replace(morals$RELIGION, morals$RELIGION<0,17) 
+
+```
+
+Remove observations where the response variable is "don't know"/"unsure"
+
+```{r}
+morals<-subset(morals, Y!=5)
+```
+
+Make response variable binary (agree is 0, disagree is 1)
+
+```{r}
+morals <- morals %>%
+  mutate(Y = case_when(
+    Y == 1 ~ 0,
+    Y == 2 ~ 0,
+    Y == 3 ~ 1,
+    Y == 4 ~ 1
+  ))
+```
+
+Fix misspelled variable
+
+```{r}
+morals <-morals %>%
+  rename("RELIGIMPORT" = "RELIIGIMPOT") 
+```
+
+```{r}
+#create new variables
+require(tidyverse)
+morals <- morals %>%
+  mutate(RELIGORNOT = case_when(
+    RELIGION <= 13 ~ "RELIGIOUS",
+    RELIGION > 13 ~ "NOT RELIGIOUS"))
+
+morals <- morals %>%
+  mutate(POLITICSDIVIDED = case_when(
+    POLITICS < 4 ~ "LIBERAL",
+    POLITICS > 4 ~ "CONSERVATIVE"))
+```
+
+drop na
+
+```{r}
+final_data <- drop_na(morals)
+```
+
+Performing Exploratory Data Analysis
+
+```{r}
+attach(final_data)
+#Contingency table with gender and Y
+mytable <- table(GENDER,Y) # Gender will be rows, Y will be columns
+mytable # print table
+mytable2 <- as.data.frame(mytable)
+prop.table(mytable) # cell percentages
+```
+
+```{r}
+final_data %>%
+  count(GENDER,Y) %>%
+  filter(GENDER==1) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+
+#5% of women say they would break with their morality
+
+final_data %>%
+  count(GENDER,Y) %>%
+  filter(GENDER==0) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+
+#10% of men say they would break with their morality
+```
+
+```{r}
+#what percentage of Catholics say they would break morals? 9%
+final_data %>%
+  count(RELIGION,Y) %>%
+  filter(RELIGION==1) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#what percentage of Protestants say they would break morals? 5%
+final_data %>%
+  count(RELIGION,Y) %>%
+  filter(RELIGION==2) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#what percentage of people who declined to report religion say they would break morals? 10%
+final_data %>%
+  count(RELIGION,Y) %>%
+  filter(RELIGION==17) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#what percentage of people whose religion is extremely important to them would break morals? 3%
+final_data %>%
+  count(RELIGIMPORT,Y) %>%
+  filter(RELIGIMPORT==1) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#what percentage of people whose religion is not at all important to them would break morals? 11%
+final_data %>%
+  count(RELIGIMPORT,Y) %>%
+  filter(RELIGIMPORT==5) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#bar chart of answer to question based on religious importance
+attach(final_data)
+religimpttable <- table(RELIGIMPORT,Y) # Religimpt will be rows, Y will be columns
+religimpttable # print table
+propsreligimpt<- prop.table(religimpttable) # cell percentages
+barplot(propsreligimpt, ylab="Frequency", xlab="Response to Moral Question", main="Religious Importance and Breaking Morals", col=c("red", "orange","yellow","green","blue"), beside=TRUE, width=.3)
+```
+
+```{r}
+#Politics and Y
+attach(final_data)
+mytable3 <- table(POLITICS,Y) # Politics will be rows, Y will be columns
+mytable3 #print table
+prop.table(mytable3) #cell percentages
+```
+
+```{r}
+#what percentage of Extremely Liberal people said they would break morals? 9%
+require(dplyr)
+require(srvyr)
+final_data %>%
+  count(POLITICS,Y) %>%
+  filter(POLITICS==1) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#what percentage of Extremely conservative people said they would break morals? 4%
+final_data %>%
+  count(POLITICS,Y) %>%
+  filter(POLITICS==7) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#Education and Y
+attach(final_data)
+mytable4 <- table(EDUCATION,Y)
+mytable4
+prop.table(mytable4)
+
+```
+
+```{r}
+#what percentage of ppl with graduate degrees would break rules? 7%
+final_data %>%
+  count(EDUCATION,Y) %>%
+  filter(EDUCATION==5) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+```{r}
+#what percentage of ppl with no HS diploma would break rules? 4%
+final_data %>%
+  count(EDUCATION,Y) %>%
+  filter(EDUCATION==1) %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+```
+
+Making nicer tables
+
+```{r}
+gendertable <- data.frame(Gender = c("Male", 
+                                       "Female"),
+                          Yes = c(57, 30),
+                          No = c(500, 599))
+
+theHeader <- data.frame(col_keys = colnames(gendertable),
+                        line1 = c("Gender", rep("Response", 2)),
+                        line2 = colnames(gendertable))
+
+library(flextable)
+library(dplyr)
+
+flextable(gendertable, col_keys = theHeader$col_keys) %>% 
+  set_header_df(
+    mapping = theHeader,
+    key = "col_keys"
+  ) %>% 
+  theme_booktabs() %>% 
+  merge_v(part = "header") %>% 
+  merge_h(part = "header") %>% 
+  align(align = "center", part = "all") %>% 
+  #autofit() %>% 
+  empty_blanks() %>% 
+  fix_border_issues()  %>%
+  set_caption(caption = "It is sometimes okay to break moral rules if it works to your advantage and you can get away with it.") %>% 
+  set_table_properties(width = 0.75, layout = "autofit")
+```
+
+Religious vs not contingency table
+
+```{r}
+
+attach(final_data)
+religornotinitialtable <- table(RELIGORNOT,Y) # Politics will be rows, Y will be columns
+religornotinitialtable #print table
+
+#what percent of religious people would break morals? 6%
+final_data %>%
+  count(RELIGORNOT,Y) %>%
+  filter(RELIGORNOT=="RELIGIOUS") %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+
+#what percent of non-religious people would break morals? 8%
+final_data %>%
+  count(RELIGORNOT,Y) %>%
+  filter(RELIGORNOT=="NOT RELIGIOUS") %>%
+  group_by() %>%
+  mutate(
+    p=n/sum(n)
+  )
+religiontable <- data.frame(Gender = c("Religious", 
+                                       "Not"),
+                          Yes = c(42, 45),
+                          No = c(617, 482))
+
+theHeader2 <- data.frame(col_keys = colnames(religiontable),
+                        line1 = c("Religious or Not", rep("Response", 2)),
+                        line2 = colnames(religiontable))
+
+library(flextable)
+library(dplyr)
+
+flextable(religiontable, col_keys = theHeader2$col_keys) %>% 
+  set_header_df(
+    mapping = theHeader2,
+    key = "col_keys"
+  ) %>% 
+  theme_booktabs() %>% 
+  merge_v(part = "header") %>% 
+  merge_h(part = "header") %>% 
+  align(align = "center", part = "all") %>% 
+  #autofit() %>% 
+  empty_blanks() %>% 
+  fix_border_issues()  %>%
+  set_caption(caption = "It is sometimes okay to break moral rules if it works to your advantage and you can get away with it.") %>% 
+  set_table_properties(width = 0.75, layout = "autofit")
+```
+
+Chi square tests of independence for select variables
+
+```{r}
+#Religious importance and response to moral question - result: statistically significant --> dependent 
+require(gmodels)
+CrossTable(final_data$RELIGIMPORT, final_data$Y, expected = TRUE, prop.c = FALSE, prop.r = FALSE, prop.t = FALSE, prop.chisq=FALSE)
+
+ReligGap <- 
+  xtabs(~RELIGIMPORT + Y, data = final_data)
+summary(ReligGap)
+
+stdres <- chisq.test(ReligGap)$stdres
+
+require(vcd)
+require(grid)
+chisq.test(ReligGap)
+mosaic(ReligGap, gp=shading_Friendly, residuals = stdres,
+       residuals_type="Std\nresiduals", labeling = labeling_residuals())
+
+#Political ideology and response to moral question - result -- statistically significant --> dependent
+
+  
+CrossTable(final_data$POLITICSDIVIDED, final_data$Y, expected = TRUE, prop.c = FALSE, prop.r = FALSE, prop.t = FALSE, prop.chisq=FALSE)
+
+PoliticGap <- 
+  xtabs(~POLITICSDIVIDED + Y, data = final_data)
+summary(PoliticGap)
+
+stdres2 <- chisq.test(PoliticGap)$stdres
+
+chisq.test(PoliticGap)
+mosaic(PoliticGap, gp=shading_Friendly, residuals = stdres2,
+       residuals_type="Std\nresiduals", labeling = labeling_residuals())
+
+#Gender and response to moral question - result - statistically significant --> dependent
+
+CrossTable(final_data$GENDER, final_data$Y, expected = TRUE, prop.c = FALSE, prop.r = FALSE, prop.t = FALSE, prop.chisq=FALSE)
+
+GenderGap <- 
+  xtabs(~GENDER + Y, data = final_data)
+summary(GenderGap)
+
+stdres3 <- chisq.test(GenderGap)$stdres
+
+chisq.test(GenderGap)
+mosaic(GenderGap, gp=shading_Friendly, residuals = stdres3,
+       residuals_type="Std\nresiduals", labeling = labeling_residuals())
+```
+
+Step 1 Model Selection Process
+
+```{r}
+ind_1 <- glm(Y~GENDER,family=binomial,data=final_data)
+summary(ind_1)
+#significant, keep gender
+ind_2 <- glm(Y~factor(RACE),family=binomial,data=final_data)
+summary(ind_2)
+#not significant, toss race
+ind_3 <- glm(Y~factor(LOCATION),family=binomial,data=final_data)
+summary(ind_3)
+#not significant, toss location
+ind_4 <- glm(Y~factor(OCCUPATION),family=binomial,data=final_data)
+summary(ind_4)
+#not significant, throw out
+ind_5 <- glm(Y~POLITICS,family=binomial,data=final_data)
+summary(ind_5)
+#keep, politics is significant
+ind_6 <- glm(Y~factor(EVIL),family=binomial,data=final_data)
+summary(ind_6)
+#only significant factor is the god one, toss
+ind_7 <- glm(Y~RELIGIMPORT,family=binomial,data=final_data)
+summary(ind_7)
+#very significant, keep religious importance
+ind_8 <- glm(Y~EDUCATION,family=binomial,data=final_data)
+summary(ind_8)
+#not significant, toss
+ind_9 <- glm(Y~RELIGORNOT,family=binomial,data=final_data)
+summary(ind_9)
+#significant 
+```
+
+Step 2 variable selection process: backward elimination
+
+```{r}
+bck_1 <- glm(Y~GENDER+POLITICS+RELIGIMPORT+RELIGORNOT,family=binomial,data=final_data)
+summary(bck_1)
+bck_2 <- glm(Y~GENDER+RELIGIMPORT+RELIGORNOT,family=binomial,data=final_data)
+summary(bck_2)
+bck_3 <- glm(Y~GENDER+RELIGIMPORT,family=binomial,data=final_data)
+summary(bck_3)
+```
+
+Step 3 of variable selection process
+
+```{r}
+retest_1 <- glm(Y~GENDER+RELIGIMPORT+factor(RACE),family=binomial,data=final_data)
+summary(retest_1)
+retest_2 <- glm(Y~GENDER+RELIGIMPORT+factor(LOCATION),family=binomial,data=final_data)
+summary(retest_2)
+retest_3 <- glm(Y~GENDER+RELIGIMPORT+factor(RELIGION),family=binomial,data=final_data)
+summary(retest_3)
+retest_4 <- glm(Y~GENDER+RELIGIMPORT+POLITICS,family=binomial,data=final_data)
+summary(retest_4)
+retest_5 <- glm(Y~GENDER+RELIGIMPORT+factor(EVIL),family=binomial,data=final_data)
+summary(retest_5)
+retest_6 <- glm(Y~GENDER+RELIGIMPORT+EDUCATION,family=binomial,data=final_data)
+summary(retest_6)
+
+
+final_model <- glm(Y~GENDER+RELIGIMPORT+POLITICSDIVIDED,family=binomial,data=final_data)
+summary(final_model)
+```
+
+Step 4 variable selection process : interactions
+
+```{r}
+int_1 <- glm(Y~GENDER+RELIGIMPORT+POLITICSDIVIDED+GENDER:RELIGIMPORT,family=binomial,data=morals)
+summary(int_1)
+int_2 <- glm(Y~GENDER+RELIGIMPORT+POLITICSDIVIDED+GENDER:POLITICSDIVIDED,family=binomial,data=morals)
+summary(int_2)
+int_3 <- glm(Y~GENDER+RELIGIMPORT+POLITICSDIVIDED+RELIGIMPORT:POLITICSDIVIDED,family=binomial,data=morals)
+summary(int_3)
+```
+
+Step 5 conduct follow-up diagnostics
+
+```{r}
+require(pROC)
+rocplot <- roc(Y~fitted(final_model),data=final_data)
+plot.roc(rocplot,legacy.axes = T)
+auc(rocplot)
+
+cor(final_data$Y, fitted(final_model))
+```
+
+final model
+
+```{r}
+summary(final_model)
+```
+
+Examine deviance
+
+```{r}
+pchisq(34.34,3,lower.tail=F) #the betas do not all equal 0
+pchisq(587.68,1182,lower.tail=F)
+```
