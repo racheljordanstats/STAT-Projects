@@ -1,0 +1,171 @@
+---
+title: "488_Project_1"
+author: "Rachel Jordan"
+date: "4/1/2022"
+header-includes:
+   - \usepackage{setspace}
+   - \doublespacing
+output:
+  pdf_document: default
+  html_document: default
+---
+
+### **Executive Summary**
+
+#### *Introduction*
+
+My data set was taken from the Chicago Health Atlas (<https://chicagohealthatlas.org/>), which was created by the Chicago Department of Public Health and Population Health Analytics Metrics Evaluation (PHAME) Center at UIC. The Atlas allows users to create their own data sets using any of several available variables. For this project, 57 variables regarding different mortality rates, disabilities, economic factors, and educational attainment were selected for the full population of Chicago for the period 2015-2019. Each of the 77 observations in the data set corresponds to one community area of the city.
+
+#### *Field of Analysis*
+
+The field of public health relies heavily on statistical methods. Examples of the application of public health statistics include understanding, preventing, and controlling disease, guiding health policy, and planning individuals' medical care (Matranga et al., 2021). Another important aspect of public health is determining whether the current health systems in place are equipped to provide care to their populations. The statistical method of principal component analysis (PCA), which has been employed in this analysis, is frequently used to construct single scale measurements of socioeconomic status (Jackson et al., 2015), which can in turn be used in public health to measure "readiness and preparedness to provide accessible and quality service delivery" of health care systems (Wanzala et al., 2019).
+
+#### *Details of the Methods Used*
+
+PCA was used in this analysis to reduce the dimensionality of this large and relatively correlated data set. A PCA was first performed on all variables, but, due to the large number of principal components that would need to be retained for such a large data set and thus a significant lessening in interpretability, the number of variables was reduced until running a PCA resulted in only a small number of components explaining 70-90% of the variance from the original variables. The variables selected to proceed with were economic and related educational variables which, as mentioned above, are frequently used in PCA for public health.
+
+Once the final variables were selected, multivariate outliers were examined (discussed further below). A correlation matrix was also created to check whether correlations were high enough that running a PCA was reasonable. Many correlations were in the moderately high to high range of 0.5 to 0.9, so PCA was deemed to be a reasonable methodology for this situation.
+
+Although most of the variables were on the same scale as measures in percents, scaling was turned on in the prcomp() function due to the inclusion of variables like hardship index which were not in percent format.
+
+The results of the PCA indicated that the first 4 principal components accounted for more than 90% of the variance from the variables used. As 70% to 90% is generally recommended, these 4 principal components were considered further. The creation of a scree plot, however, drove the decision to pare down to only the first two principal components, as the percent of variance explained visibly decreased significantly after the second principal component as per the scree plot.
+
+#### *Findings/Conclusions*
+
+Two principal components were created. The first, which accounts for approximately 69% of the variance of the original variables, can be interpreted as a measure of the socioeconomic status of a community area (most of the loadings are similar in size (around 0.2-0.3), and variables such as food stamps, cash welfare, and hardship have positive loadings whereas variables such as median household income and per capita income have negative loadings). Making sense of the second principal component is slightly more difficult, but a possible interpretation is that it is a measure of economic diversity (the loading for economic diversity is relatively high (0.39) and the other loadings are a diverse mixture of negative values for many educational attainment variables while also being negative for food stamps and cash welfare). The second principal component accounts for approximately 14% of the overall variance, bringing the total amount of variance accounted for by the two principal components to a reasonable 83%.
+
+#### *Caveats*
+
+Chicago has been referred to as the most segregated city in the United States, and it has seen an increase in both working class and wealthy residents while the middle class has shrunk (Luhby, 2016). Given this context, it should come as no surprise that when economic and educational variables are measured by community area, many multivariate outliers are present (n=25 out of 77), both from ultra-wealthy neighborhoods (e.g. Lincoln Park) and from more economically depressed areas (e.g. East Garfield Park). Outliers were not removed from the data set prior to analysis both because there were no obvious data entry errors (the values seemed reasonable for all) and because the segregated nature of the city lends itself to more outliers being present when measuring socioeconomic variables. Due to the presence of many outliers, it is recommended that further study be conducted which accounts for the segregated nature of the city in a more sophisticated manner.
+
+#### *Recommendations*
+
+Further analysis is recommended. In particular, examining the effectiveness of using the two proposed principal components to predict various health outcomes is suggested to provide direction for the creation of health care policy and to evaluate the readiness of Chicago's public health systems to support its population on the level of the community area. Comparison of this PCA to others which surely exist based on similar city data is also recommended, as the proliferation of similar results from similar analyses create a stronger basis for action.
+
+*This analysis was completed with frequent reference to "An Introduction to Applied Multivariate Analysis with R" by Everitt and Hothorn (2011).*
+
+### Works Cited
+
+Jackson, E.F., Siddiqui, A., Gutierrez, H., Kante, A., Austin, J., & Phillips, J. Estimation of indices of health service readiness with a principal component analysis of the Tanzania Service Provision Assessment Survey. *BMC Health Serv Res* **15,** 536 (2015). <https://doi.org/10.1186/s12913-015-1203-7>
+
+Luhby, T. (2016). *Chicago: America's most segregated city*. CNNMoney. <https://money.cnn.com/2016/01/05/news/economy/chicago-segregated/>
+
+Matranga, D., Bono, F., & Maniscalco, L. (2021). Statistical Advances in Epidemiology and Public Health. *International journal of environmental research and public health*, *18*(7), 3549. <https://doi.org/10.3390/ijerph18073549>
+
+Wanzala, Maximila & Oloo, James Aggrey & Ochieng, Nguka. (2019). Application of Principal Component Analysis to Assess Health Systems Capacity Using Cross Sectional Data in Rural Western Kenya. 7. 27-32. 10.12691/ajphr-7-1-5.
+
+------------------------------------------------------------------------
+
+**Appendix**
+
+Reading in the data set:
+
+```{r}
+raw_data <- read.csv("488 Project Data.csv",header=T)
+raw_data_2 <- raw_data[,-1]
+```
+
+*Deciding which variables to use for final PCA*\
+*See how a PCA would work using all variables*
+
+```{r}
+raw_data_pcr <- prcomp(raw_data_2,scale=T)
+summary(raw_data_pcr)
+#The first 13 PC's explain most of the variance, but this is a bit overwhelming
+#to deal with, so I am going to look at the data and pare it down to get
+#a more reasonable amount of variables.
+#I am going to remove the variables dealing with housing & disability scenarios 
+#because these seem the least relevant and helpful. Then I will try the PCA again.
+```
+
+*Trying the PCA again with fewer variables*
+
+```{r}
+data_no_housing <- raw_data_2[,-c(32:42)]
+no_housing_pcr <- prcomp(data_no_housing,scale=T)
+summary(no_housing_pcr)
+#This is still resulting in a lot of PC's to explain 90% of the variance, so
+#I am going to pare it down more. Because it would make sense to use the economic
+#& education variables to predict any of the mortality variables, I will remove 
+#the mortality variables for now and try PCA on just the economic & education 
+#variables.
+```
+
+*Creating new data set with only economic & education variables*
+
+```{r}
+only_econ <- data_no_housing[,-c(1:31)]
+#rename only_econ variables
+require(tidyverse)
+only_econ <- only_econ %>%
+  rename(food_stamps=SNP_2015.2019,
+         pov_no_food_stamps=SNQ_2015.2019,
+         cash_welfare=TNF_2015.2019,
+         econ_divers_index=EDX_2015.2019,
+         hardship_index=HDX_2015.2019,
+         med_hh_income=INC_2015.2019,
+         per_capita_income=PCI_2015.2019,
+         pov_rate=POV_2015.2019,
+         single_parent=HTA_2015.2019,
+         unempl_rate=UMP_2015.2019,
+         hs_grad_rate=EDB_2015.2019,
+         col_grad_rate=EDE_2015.2019,
+         prschool_enroll=EDG.I_2015.2019,
+         safety_rating=HCSNSP_2016.2018)
+```
+
+```{r}
+only_econ_pca <- prcomp(only_econ,scale=T)
+summary(only_econ_pca)
+only_econ_pca$rotation
+#This gives a much more intelligible PCA summary, with 90% of the variance
+#being explained by the first 4 PC's. 
+```
+
+*Examine outliers and decide whether to remove them*
+
+```{r}
+#check for outliers
+require(MVN)
+outliers <- mvn(only_econ, multivariateOutlierMethod = "quan",showOutliers = T)
+outliers$multivariateOutliers
+#which, if any, to toss?
+#The outliers  look to be a mix of wealthy and economically depressed areas, 
+#all of which make sense in the context of a very segregated city, so I will 
+#leave them in.
+```
+
+*Look at correlation matrix to check collinearity*
+
+```{r}
+#I am going to check correlation to make sure the data are indeed good 
+#candidates for PCA (correlated).
+corr_matrix <- cor(only_econ)
+#Not all of them are highly correlated, but a lot of them are. I will try the
+#PCA.
+```
+
+*Run PCA*
+
+```{r}
+#code taken from above chunk
+only_econ_pca <- prcomp(only_econ,scale=T)
+summary(only_econ_pca)
+```
+
+*Create scree plot*
+
+```{r}
+screeplot(only_econ_pca)
+#it looks like really only the first two PC's really contribute significantly
+#when you're looking at the scree plot so I'll just select those. They explain
+#about 83% of the variance, which is good.
+```
+
+*Examine loadings for 2 PC's*
+
+```{r}
+only_econ_pca$rotation[,1:2]
+#first PC could be economic hardship more broadly
+#second PC could be economic diversity
+```
