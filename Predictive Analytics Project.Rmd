@@ -1,0 +1,45 @@
+---
+title: "Predictive Analytics Project"
+author: "Rachel Jordan"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load data
+
+```{r}
+#load data
+test <- read.csv("test space titanic.csv")
+train <- read.csv("train space titanic.csv")
+```
+
+## Wrangle data and impute
+
+```{r}
+#load tidyverse
+require(tidyverse)
+
+#create group, number in group, deck, num, side variables
+train <- train %>% 
+  mutate(Group = substr(PassengerId, start = 1, stop = 4)) %>% 
+  mutate(NumberinGroup = substr(PassengerId, start = 6, stop = 7)) %>% 
+  separate(Cabin, into=c("Deck","Num","Side"), sep="/")
+
+#impute
+require(mice)
+
+train <- train %>% 
+  mutate_all(na_if,"")
+
+imputed_values <- mice(data = train)
+
+train_imputed <- complete(imputed_values,1)
+```
+
+```{r}
+#do PCA on the group number and use the results as new variables
+```
