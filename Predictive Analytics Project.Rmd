@@ -29,15 +29,41 @@ train <- train %>%
   mutate(NumberinGroup = substr(PassengerId, start = 6, stop = 7)) %>% 
   separate(Cabin, into=c("Deck","Num","Side"), sep="/")
 
+#change to factor and numeric. try Group and NumberinGroup as both factors and numeric
+train <- as.data.frame(apply(train, MARGIN = 2, FUN = factor))
+train$Num <- as.numeric(train$Num)
+train$Age <- as.numeric(train$Age)
+train$RoomService <- as.numeric(train$RoomService)
+train$FoodCourt <- as.numeric(train$FoodCourt)
+train$ShoppingMall <- as.numeric(train$ShoppingMall)
+train$Spa <- as.numeric(train$Spa)
+train$VRDeck <- as.numeric(train$VRDeck)
+
+#drop passenger name and passengerid
+train <- train %>% 
+  select(-c(PassengerId,Name))
+
 #impute
 require(mice)
 
 train <- train %>% 
   mutate_all(na_if,"")
 
-imputed_values <- mice(data = train)
+pred_matrix <- make.predictorMatrix(train, blocks = make.blocks(train))
 
-train_imputed <- complete(imputed_values,1)
+imputed_data <- mice(data = train, m = 5, maxit = 5, seed = 1992, printFlag = F, predictorMatrix = pred_matrix, method = "cart")
+
+train_imputed <- complete(imputed_data, 1)
+
+#function to sum missing values
+missing <- function(x) {
+  sum(is.na(x))
+}
+
+apply(train_imputed, 2, missing)
+
+#it didn't impute any of the factors. 
+
 ```
 
 ```{r}
