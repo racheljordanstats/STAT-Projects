@@ -29,8 +29,8 @@ train <- train %>%
   mutate(NumberinGroup = substr(PassengerId, start = 6, stop = 7)) %>% 
   separate(Cabin, into=c("Deck","Num","Side"), sep="/")
 
-#change to factor and numeric. try Group and NumberinGroup as both factors and numeric
-train <- as.data.frame(apply(train, MARGIN = 2, FUN = factor))
+#change to factor and numeric.
+train <- as.data.frame(unclass(train), stringsAsFactors = TRUE)
 train$Num <- as.numeric(train$Num)
 train$Age <- as.numeric(train$Age)
 train$RoomService <- as.numeric(train$RoomService)
@@ -38,6 +38,8 @@ train$FoodCourt <- as.numeric(train$FoodCourt)
 train$ShoppingMall <- as.numeric(train$ShoppingMall)
 train$Spa <- as.numeric(train$Spa)
 train$VRDeck <- as.numeric(train$VRDeck)
+train$Group <- as.numeric(train$Group)
+train$NumberinGroup <- as.numeric(train$NumberinGroup)
 
 #drop passenger name and passengerid
 train <- train %>% 
@@ -49,9 +51,7 @@ require(mice)
 train <- train %>% 
   mutate_all(na_if,"")
 
-pred_matrix <- make.predictorMatrix(train, blocks = make.blocks(train))
-
-imputed_data <- mice(data = train, m = 5, maxit = 5, seed = 1992, printFlag = F, predictorMatrix = pred_matrix, method = "cart")
+imputed_data <- mice(data = train, m = 5, printFlag = F)
 
 train_imputed <- complete(imputed_data, 1)
 
@@ -61,8 +61,6 @@ missing <- function(x) {
 }
 
 apply(train_imputed, 2, missing)
-
-#it didn't impute any of the factors. 
 
 ```
 
