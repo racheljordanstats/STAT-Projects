@@ -51,6 +51,7 @@ require(mice)
 train <- train %>% 
   mutate_all(na_if,"")
 
+set.seed(1900)
 imputed_data <- mice(data = train, m = 5, printFlag = F)
 
 train_imputed <- complete(imputed_data, 1)
@@ -62,8 +63,44 @@ missing <- function(x) {
 
 apply(train_imputed, 2, missing)
 
+#and now I actually have to split this into a sub train and sub test because we don't have the response for the test data
+set.seed(98393)
+train_sample <- sample(1:8693,8693*0.8,replace=F)
+training <- train_imputed[train_sample,]
+testing <- train_imputed[-train_sample,]
 ```
 
+## Trying logistic regression
+
 ```{r}
-#do PCA on the group number and use the results as new variables
+#fit model
+log_reg <- glm(Transported ~ ., data=training, family="binomial")
+#warning: fitted probabiliites numerically 0 or 1 occurred
+
+#calculate error rate
+log_reg_preds <- ifelse(predict(log_reg, newdata = testing, type="response") > 0.5,"True","False")
+
+#error rate
+table(log_reg_preds,testing$Transported)
+(173 + 200)/nrow(testing) #21.4% which is honestly not too shabby. 
+```
+
+## Try Support Vector Classifier and Machine
+
+```{r}
+#support vector classifier
+require(e1071)
+set.seed(19)
+tune_out_svc <- tune(svm, Transported~.,data=training, kernel = "linear", ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100)))
+summary(tune_out_svc)
+#we want cost to be 5
+set.seed(8383)
+best_svc <- svm(Transported ~ ., data = training, kernel = "linear", cost=5)
+summary(best_svc)
+
+#calculate error rate
+table(predict(best_svc,testing),testing$Transported)
+(233+137)/nrow(testing) #21.3% error, barely better than the logistic regression model which tracks based on the homework question I just completed
+
+#support vector machine
 ```
