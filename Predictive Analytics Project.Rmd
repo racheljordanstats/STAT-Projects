@@ -70,6 +70,53 @@ training <- train_imputed[train_sample,]
 testing <- train_imputed[-train_sample,]
 ```
 
+## EDA
+
+```{r}
+#break out numeric variables
+numeric_preds <- training %>% 
+  select(Num, RoomService, FoodCourt, ShoppingMall, Spa, VRDeck, Group, NumberinGroup)
+
+#correlation matrix
+cor(numeric_preds) #pretty low correlations
+
+#look at money spending to see if there's any pattern there
+money_totals <- training %>% 
+  mutate(total_spent = RoomService + FoodCourt + ShoppingMall + Spa + VRDeck)
+
+#visualize
+ggplot(money_totals, mapping = aes(y = total_spent)) + geom_boxplot() + facet_grid(cols = vars(Transported)) + coord_cartesian(ylim = c(0,5000)) #people who were transported tended to spend less money overall than people who weren't
+
+#look at side of the ship
+require(vcd)
+sides <- xtabs(~Side + Transported, data = training)
+sides_stdres <- chisq.test(sides)$stdres
+mosaic(sides, gp = shading_Friendly, residuals = sides_stdres,
+       residuals_type = "Std/nresiduals", labeling = labeling_residuals()) #more S were transported, less P were transported
+chisq.test(sides) #this p-value is sigificant, side is not independent of transportation
+
+#look at deck
+ggplot(training, mapping = aes(x = Deck)) + geom_bar(aes(fill = Transported), position = "dodge") #looks like B and C decks were more likely to get transported and E and F were less likely to get transported
+
+#look at Num
+ggplot(training, mapping = aes(y = Num)) + geom_boxplot() + facet_grid(cols = vars(Transported)) #this doesn't seem to really matter
+
+#look at Age
+ggplot(training, mapping = aes(y = Age)) + geom_boxplot() + facet_grid(cols = vars(Transported)) #this doesn't seem to really matter either
+
+#look at destination
+xtabs(~Destination + Transported, data = training)
+#seems like a lot more cancri people were transported than not - doesn't seem to be much of a difference for the others
+
+#look at homeplanet
+xtabs(~HomePlanet + Transported, data = training)
+#lotta europa people got transported, looks like more earth people did not, mars seems neutral
+
+#look at cryosleep
+xtabs(~CryoSleep + Transported, data = training)
+#this seems to really matter - cryosleep seams to lead to transportation
+```
+
 ## Trying logistic regression
 
 ```{r}
@@ -102,5 +149,41 @@ summary(best_svc)
 table(predict(best_svc,testing),testing$Transported)
 (233+137)/nrow(testing) #21.3% error, barely better than the logistic regression model which tracks based on the homework question I just completed
 
-#support vector machine
+#support vector machine with polynomial kernel
+# set.seed(99)
+# tune_out_svm_poly <- tune(svm, Transported ~ ., data=training, kernel= "polynomial", ranges = list(
+#   cost = c(0.001,0.01, 0.1, 1, 5, 10, 100),
+#   gamma = c(0.001, 0.01, 0.1, 1, 10)
+# ))
+# summary(tune_out_svm_poly)
+# #want cost to be 1 and gamma to be 1
+# svm_poly_95 <- svm(factor.y. ~ . , data=train_95, kernel = "polynomial", gamma = 1, cost = 1, degree=4)
+# poly_95_preds <- predict(svm_poly_95,train_95)
+```
+
+## Random Forest, Bagging, Boosting
+
+```{r}
+#load randomforest package
+require(randomForest)
+
+#try bagging
+set.seed(8488)
+bag_model <- randomForest(Transported ~ ., data = training, mtry = 15, importance = T)
+bag_model #OOB estimate of error rate = 20.61%
+
+#try randomForest
+set.seed(8484949) 
+rf_model <- randomForest(Transported ~ ., data = training, importance = T)
+rf_model #OOB estimate of error rate = 19%
+
+#experiment with number of trees and mtry
+find_ntree <- function(x) {
+  set.seed(19)
+  ntree_result <- randomForest(Transported ~ ., data = training, ntree = x)
+ return(mean(ntree_result$confusion[,3]))
+}
+
+possible_x <- c(1:5000)
+sapply(possible_x,find_ntree)
 ```
