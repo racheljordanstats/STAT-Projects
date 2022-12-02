@@ -150,15 +150,15 @@ table(predict(best_svc,testing),testing$Transported)
 (233+137)/nrow(testing) #21.3% error, barely better than the logistic regression model which tracks based on the homework question I just completed
 
 #support vector machine with polynomial kernel
-# set.seed(99)
-# tune_out_svm_poly <- tune(svm, Transported ~ ., data=training, kernel= "polynomial", ranges = list(
-#   cost = c(0.001,0.01, 0.1, 1, 5, 10, 100),
-#   gamma = c(0.001, 0.01, 0.1, 1, 10)
-# ))
-# summary(tune_out_svm_poly)
-# #want cost to be 1 and gamma to be 1
-# svm_poly_95 <- svm(factor.y. ~ . , data=train_95, kernel = "polynomial", gamma = 1, cost = 1, degree=4)
-# poly_95_preds <- predict(svm_poly_95,train_95)
+set.seed(99)
+tune_out_svm_poly <- tune(svm, Transported ~ ., data=training, kernel= "polynomial", ranges = list(
+  cost = c(0.001, 0.1, 1, 5, 10, 100),
+  gamma = c(0.01, 0.1, 1, 5)
+))
+summary(tune_out_svm_poly)
+#want cost to be 1 and gamma to be 1
+svm_poly_95 <- svm(factor.y. ~ . , data=train_95, kernel = "polynomial", gamma = 1, cost = 1, degree=4)
+poly_95_preds <- predict(svm_poly_95,train_95)
 ```
 
 ## Random Forest, Bagging, Boosting
@@ -184,6 +184,29 @@ find_ntree <- function(x) {
  return(mean(ntree_result$confusion[,3]))
 }
 
-possible_x <- c(1:5000)
-sapply(possible_x,find_ntree)
+possible_x <- c(1:500)
+ntree_stuff <- sapply(possible_x,find_ntree)
+which.min(ntree_stuff) #use ntree = 296
+
+find_mtry <- function(x) {
+  set.seed(19)
+  mtry_result <- randomForest(Transported ~ ., data = training, ntree = 296, mtry = x)
+  return(mean(mtry_result$confusion[,3]))
+}
+
+possible_mtry <- c(1:15)
+mtry_stuff <- sapply(possible_mtry, find_mtry)
+which.min(mtry_stuff) #use mtry = 3
+
+set.seed(19)
+best_rf <- randomForest(Transported ~ ., data = training, ntree = 296, mtry = 3)
+best_rf #OOB error rate 18.91%
+
+#cross-validate on test set
+set.seed(19)
+rf_preds <- predict(best_rf, newdata = testing)
+table(rf_preds, testing$Transported)
+(181 + 157)/nrow(testing) #19.4% error rate
+
+
 ```
