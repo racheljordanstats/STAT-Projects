@@ -371,4 +371,5 @@ trying_again <- predict(best_rf_2, newdata = test_final)
 kaggle_submission <- data.frame(test_final$`test_reload$PassengerId`,trying_again)
 colnames(kaggle_submission) <- c("PassengerId","Transported")
 write.csv(kaggle_submission,"Second Kaggle Submission.csv",row.names = F)
+#i got position 1502 on the kaggle leaderboard with a score of 0.79214
 ```
