@@ -2,12 +2,14 @@
 title: "Predictive Analytics Project"
 author: "Rachel Jordan"
 date: "`r Sys.Date()`"
-output: html_document
+output: word_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# Appendix
 
 ## Load data
 
@@ -172,7 +174,6 @@ tune_out_svm_poly_3 <- tune(svm, Transported ~ ., data=training, kernel= "polyno
 )) #40 is best
 summary(tune_out_svm_poly_3)
 
-#want cost to be  and gamma to be 1
 set.seed(2838)
 svm_poly <- svm(Transported ~ . , data=training, kernel = "polynomial", cost = 40, degree=2)
 poly_preds <- predict(svm_poly,testing)
@@ -216,7 +217,7 @@ table(radial_preds_2,testing$Transported)
 #i tuned gamma a little but it didn't improve the model at all
 ```
 
-## Random Forest, Bagging, Boosting
+## Random Forest and Bagging
 
 ```{r}
 #load randomforest package
@@ -243,6 +244,10 @@ possible_x <- c(1:500)
 ntree_stuff <- sapply(possible_x,find_ntree)
 which.min(ntree_stuff) #use ntree = 296
 
+#visualize
+viz_ntree <- data.frame(possible_x,ntree_stuff)
+ggplot(viz_ntree, aes(x = possible_x, y = ntree_stuff)) + geom_line() + xlab("Possible Ntree Values") + ylab("Classification Error Rate")
+
 find_mtry <- function(x) {
   set.seed(19)
   mtry_result <- randomForest(Transported ~ ., data = training, ntree = 296, mtry = x)
@@ -252,6 +257,10 @@ find_mtry <- function(x) {
 possible_mtry <- c(1:15)
 mtry_stuff <- sapply(possible_mtry, find_mtry)
 which.min(mtry_stuff) #use mtry = 3
+
+#visualize
+viz_mtry <- data.frame(possible_mtry,mtry_stuff)
+ggplot(viz_mtry, aes(x = possible_mtry, y = mtry_stuff)) + geom_line() + xlab("Possible MTry Values") + ylab("Classification Error Rate") 
 
 set.seed(19)
 best_rf <- randomForest(Transported ~ ., data = training, ntree = 296, mtry = 3)
