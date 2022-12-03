@@ -68,6 +68,10 @@ set.seed(98393)
 train_sample <- sample(1:8693,8693*0.8,replace=F)
 training <- train_imputed[train_sample,]
 testing <- train_imputed[-train_sample,]
+
+#write to csv for use in google colab
+write.csv(training,"training export.csv")
+write.csv(testing, "testing export.csv")
 ```
 
 ## EDA
@@ -152,13 +156,64 @@ table(predict(best_svc,testing),testing$Transported)
 #support vector machine with polynomial kernel
 set.seed(99)
 tune_out_svm_poly <- tune(svm, Transported ~ ., data=training, kernel= "polynomial", ranges = list(
-  cost = c(0.001, 0.1, 1, 5, 10, 100),
-  gamma = c(0.01, 0.1, 1, 5)
-))
+  cost = c(0.001, 1, 10, 100)
+)) #10 is best. i can't tune cost and gamma at the same time because it runs for ages and ages and ages
 summary(tune_out_svm_poly)
-#want cost to be 1 and gamma to be 1
-svm_poly_95 <- svm(factor.y. ~ . , data=train_95, kernel = "polynomial", gamma = 1, cost = 1, degree=4)
-poly_95_preds <- predict(svm_poly_95,train_95)
+
+set.seed(99)
+tune_out_svm_poly_2 <- tune(svm, Transported ~ ., data=training, kernel= "polynomial", ranges = list(
+  cost = c(1, 5, 10, 50, 100)
+)) #50 is best
+summary(tune_out_svm_poly_2)
+
+set.seed(99)
+tune_out_svm_poly_3 <- tune(svm, Transported ~ ., data=training, kernel= "polynomial", ranges = list(
+  cost = c(30, 40, 50, 60, 70)
+)) #40 is best
+summary(tune_out_svm_poly_3)
+
+#want cost to be  and gamma to be 1
+set.seed(2838)
+svm_poly <- svm(Transported ~ . , data=training, kernel = "polynomial", cost = 40, degree=2)
+poly_preds <- predict(svm_poly,testing)
+table(poly_preds,testing$Transported)
+(175+165)/nrow(testing) #19.6% error rate
+
+#mess around with degree
+set.seed(2838)
+svm_poly_2 <- svm(Transported ~ . , data=training, kernel = "polynomial", cost = 40, degree=2)
+poly_preds_2 <- predict(svm_poly_2,testing)
+table(poly_preds_2,testing$Transported)
+(151+205)/nrow(testing) #19.6% error rate -- through manual testing I have determined that 2 is the best degree for this
+#my computer does NOT want me to tune gamma i am very sorry
+
+#support vector machine with radial kernel
+set.seed(283778)
+tune_out_svm_radial <- tune(svm, Transported ~ . , data=training, kernel = "radial", ranges = list(
+  cost = c(0.1,1,10,100,1000)
+)) #use cost = 10
+summary(tune_out_svm_radial)
+
+set.seed(0604)
+svm_radial <- svm(Transported ~ . , data=training, kernel = "radial", cost = 10)
+radial_preds <- predict(svm_radial,testing)
+table(radial_preds,testing$Transported)
+(179 + 150)/nrow(testing) #18.9% error rate
+#ok this is pretty good actually, I'm going to tune this more
+
+set.seed(28378)
+tune_out_svm_radial_2 <- tune(svm, Transported ~ . , data=training, kernel = "radial", ranges = list(
+  cost = c(5,7,9,11,13)
+)) #use cost = 10
+summary(tune_out_svm_radial_2)
+
+set.seed(0604)
+svm_radial_2 <- svm(Transported ~ . , data=training, kernel = "radial", cost = 13)
+radial_preds_2 <- predict(svm_radial_2,testing)
+table(radial_preds_2,testing$Transported)
+(173 + 148)/nrow(testing) #18.5% error rate
+
+#i tuned gamma a little but it didn't improve the model at all
 ```
 
 ## Random Forest, Bagging, Boosting
@@ -207,6 +262,113 @@ set.seed(19)
 rf_preds <- predict(best_rf, newdata = testing)
 table(rf_preds, testing$Transported)
 (181 + 157)/nrow(testing) #19.4% error rate
+```
 
+## Try LASSO
 
+```{r}
+#convert to model matrix
+model_matrix_train <- model.matrix(Transported ~ ., data = training)[,-1]
+response <- training %>% 
+  mutate(Binary = case_when(
+    Transported == "True" ~ 1,
+    Transported == "False" ~ 0
+  ))
+response <- response$Binary
+
+model_matrix_test <- model.matrix(Transported ~ ., data = testing)[,-1]
+response_test <- testing %>% 
+  mutate(Binary = case_when(
+    Transported == "True" ~ 1,
+    Transported == "False" ~ 0
+  ))
+response_test <- response_test$Binary
+
+#lasso
+require(glmnet)
+set.seed(83838)
+grid <- 10^seq(10,-2,length=100)
+ridge_mod <- glmnet(model_matrix_train, response, alpha = 1, lambda = grid)
+ridge_cv <- cv.glmnet(model_matrix_train, response, alpha = 1)
+bestlam_ridge <- ridge_cv$lambda.min
+ridge_pred <- predict(ridge_mod, s=bestlam_ridge, newx = model_matrix_test, type = "coefficients")
+ridge_pred
+#this indicates that we can try dropping VIP and number in group in other models because it reduces them to 0
+```
+
+## Try SVM and Random Forest on a Reduced Model
+
+```{r}
+#random forest
+set.seed(19)
+best_rf_2 <- randomForest(Transported ~ HomePlanet + CryoSleep + Deck + Num + Side + Destination + Age + RoomService + FoodCourt + ShoppingMall + Spa + VRDeck + Group, data = training, ntree = 296, mtry = 3)
+best_rf_2 #OOB error rate 18.91%
+
+#cross-validate on test set
+set.seed(19)
+rf_preds_2 <- predict(best_rf_2, newdata = testing)
+table(rf_preds_2, testing$Transported)
+(176 + 150)/nrow(testing) #18.7% error rate
+
+#SVM
+set.seed(0604)
+svm_radial_3 <- svm(Transported ~ HomePlanet + CryoSleep + Deck + Num + Side + Destination + Age + RoomService + FoodCourt + ShoppingMall + Spa + VRDeck + Group, data=training, kernel = "radial", cost = 13)
+radial_preds_3 <- predict(svm_radial_3,testing)
+table(radial_preds_3,testing$Transported)
+(173 + 157)/nrow(testing) #19.0% error rate
+```
+
+## Prepare Kaggle Submission CSV
+
+```{r}
+#prepare test data
+#create group, number in group, deck, num, side variables
+test <- test %>% 
+  mutate(Group = substr(PassengerId, start = 1, stop = 4)) %>% 
+  mutate(NumberinGroup = substr(PassengerId, start = 6, stop = 7)) %>% 
+  separate(Cabin, into=c("Deck","Num","Side"), sep="/")
+
+#change to factor and numeric.
+test <- as.data.frame(unclass(test), stringsAsFactors = TRUE)
+test$Num <- as.numeric(test$Num)
+test$Age <- as.numeric(test$Age)
+test$RoomService <- as.numeric(test$RoomService)
+test$FoodCourt <- as.numeric(test$FoodCourt)
+test$ShoppingMall <- as.numeric(test$ShoppingMall)
+test$Spa <- as.numeric(test$Spa)
+test$VRDeck <- as.numeric(test$VRDeck)
+test$Group <- as.numeric(test$Group)
+test$NumberinGroup <- as.numeric(test$NumberinGroup)
+
+#drop passenger name and passengerid
+test <- test %>% 
+  select(-c(PassengerId,Name))
+
+#impute
+
+test <- test %>% 
+  mutate_all(na_if,"")
+
+set.seed(1900)
+imputed_data_test <- mice(data = test, m = 5, printFlag = F) 
+
+test_imputed <- complete(imputed_data_test,1)
+test_reload <- read.csv("test space titanic.csv")
+test_final <- cbind(test_reload$PassengerId,test_imputed)
+
+final_predictions <- predict(svm_radial_2,test_final)
+kagle_submission <- data.frame(test_final$`test_reload$PassengerId`,final_predictions)
+colnames(kagle_submission) <- c("PassengerId","Transported")
+kagle_submission <- kagle_submission %>% 
+  mutate(Transported2 = as.character(Transported)) %>% 
+  select(PassengerId,Transported2)
+colnames(kagle_submission) <- c("PassengerId","Transported")
+write.csv(kagle_submission,"Kagle_Submission_Final.csv",row.names = F)
+Kagle_Submission_Final <- read_csv("Kagle_Submission_Final.csv", col_types = cols(Transported = col_character()))
+write.csv(Kagle_Submission_Final,"Final_Kaggle_Submission.csv")
+
+trying_again <- predict(best_rf_2, newdata = test_final)
+kaggle_submission <- data.frame(test_final$`test_reload$PassengerId`,trying_again)
+colnames(kaggle_submission) <- c("PassengerId","Transported")
+write.csv(kaggle_submission,"Second Kaggle Submission.csv",row.names = F)
 ```
